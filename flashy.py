@@ -3,6 +3,7 @@ import time
 
 from typing import Optional
 from rich import print
+from typing_extensions import Annotated
 
 from sqlmodel import Session, SQLModel, create_engine, select
 from models import Flashcard, Tag, FlashcardTagLink
@@ -20,8 +21,13 @@ def create_db_and_tables():
 
 
 @app.command()
-def add_flashcard(question, answer, tags=None):
+def add_flashcard(
+    question: Annotated[str, typer.Option(prompt=True)],
+    answer: Annotated[str, typer.Option(prompt=True)],
+    tags: Optional[str] = typer.Option(None, prompt="Enter tags (comma separated)"),
+):
     """Add a flashcard to the database."""
+    # Split the tags into a list
     if tags is None:
         tags = []
     else:
@@ -48,6 +54,8 @@ def add_flashcard(question, answer, tags=None):
         session.add(card)
         session.commit()
 
+        print("Flashcard added!")
+
 
 @app.command()
 def get_flashcards(tag: Optional[str] = None):
@@ -68,6 +76,14 @@ def get_flashcards(tag: Optional[str] = None):
 
         for card in flashcards:
             qa_console(card)
+
+
+@app.command()
+def list_flashcards():
+    """List all flashcards from the database."""
+    with Session(engine) as session:
+        flashcards = session.exec(select(Flashcard)).all()
+        print(flashcards)
 
 
 def welcome():
